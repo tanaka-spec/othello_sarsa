@@ -11,20 +11,10 @@ class Board:
 	def __init__(self, size=8, reset=True):
 		self.size = size
 		self.array = None
-		self.num_stones = 0
+		self.num_turns = 0
 		if reset:
 			self.reset_board()
 		return
-
-
-	def __eq__(self, other):
-		if self.size != other.size or self.num_stones != other.num_stones:
-			return False
-		for x in range(self.size):
-			for y in range(self.size):
-				if self.array[x][y] != other.array[x][y]:
-					return False
-		return True
 
 
 	def __str__(self):
@@ -53,7 +43,6 @@ class Board:
 		self.array[4][3] = WHITE
 		self.array[3][3] = BLACK
 		self.array[4][4] = BLACK
-		self.num_stones = 4
 		return
 
 
@@ -62,9 +51,9 @@ class Board:
 
 
 	def is_valid_move(self, stone: chr, init_x: int, init_y: int):
-		if self.array[init_x][init_y] != BLANK and not self.inside_board(init_x, init_y):
+		if self.array[init_x][init_y] != BLANK or not self.inside_board(init_x, init_y):
 			return False
-		other_stone = get_other_stone(stone)
+		other_stone = Board.get_other_stone(stone)
 		flip_set = set()
 		
 		for xdirection, ydirection in DIRECTIONS:
@@ -72,35 +61,38 @@ class Board:
 			y = init_y
 			x += xdirection
 			y += ydirection
-			if inside_board(x, y) and board[x][y] == other_stone:
+			hold = set()
+			hold.add((x, y))
+			if self.inside_board(x, y) and self.array[x][y] == other_stone:
 				x += xdirection
 				y += ydirection
-				if not inside_board(x, y):
+				hold.add((x, y))
+				if not self.inside_board(x, y):
 					continue
-				hold = set()
-				while board[x][y] == other_stone:
+				while self.array[x][y] == other_stone:
 					x += xdirection
 					y += ydirection
-					if not inside_board(x, y):
-						break
 					hold.add((x, y))
-				if inside_board(x, y) and self.array[x][y] == stone:
+					if not self.inside_board(x, y):
+						break
+				if self.inside_board(x, y) and self.array[x][y] == stone:
 					flip_set.update(hold)
 		return flip_set
 
 
 	def place_stone(self, stone: chr, init_x: int, init_y: int):
-		flip_set = is_valid_move(stone, init_x, init_y)
+		flip_set = self.is_valid_move(stone, init_x, init_y)
 		if flip_set:
 			self.flip_stones(flip_set)
-			self.num_stones += 1
+			self.num_turns += 1
+			self.array[init_x][init_y] = stone
 			return True
 		return False
 
 
 	def flip_stones(self, array: set):
 		for x, y in array:
-			self.array[x][y] = get_other_stone(self.array[x][y])
+			self.array[x][y] = Board.get_other_stone(self.array[x][y])
 		return
 
 
@@ -110,7 +102,7 @@ class Board:
 			for y in range(self.size):
 				hold = self.copy()
 				if hold.place_stone(stone, x, y):
-					output.add((x, y), hold)
+					output.add(((x, y), hold))
 		return output
 
 
@@ -118,7 +110,7 @@ class Board:
 		output = set()
 		for x in range(self.size):
 			for y in range(self.size):
-				if is_valid_move(stone, x, y):
+				if self.is_valid_move(stone, x, y):
 					output.add((x, y))
 		return output
 
@@ -127,7 +119,7 @@ class Board:
 		output = Board(reset=False)
 		output.size = self.size
 		output.array = deepcopy(self.array)
-		output.num_stones = self.num_stones
+		output.num_turns = self.num_turns
 		return output
 
 
@@ -140,16 +132,21 @@ class Board:
 		return count
 
 
-	def get_ratio(self, stone: chr):
-		return self.count(stone) / self.num_stones
-
-
 	def get_difference(self, stone: chr):
-		return self.count(stone) - self.num_stones
+		one = 0
+		two = 0
+		other_stone = Board.get_other_stone(stone)
+		for x in range(self.size):
+			for y in range(self.size):
+				if stone == self.array[x][y]:
+					one += 1
+				if other_stone == self.array[x][y]:
+					two += 1
+		return one - two
 
 
 	def is_done(self):
-		if self.num_stones == self.size ** 2:
+		if self.num_turns == self.size ** 2:
 			return True
 		if self.get_possible_actions(WHITE) or self.get_possible_actions(BLACK):
 			return False
