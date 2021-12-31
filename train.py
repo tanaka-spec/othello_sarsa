@@ -1,11 +1,11 @@
 from sarsa import Othello_sarsa
-from othello import Board, WHITE, BLACK, BLANK
+from othello import Board, BLACK
 
 
 def train():
 	board = Board()
 	stone = BLACK
-	s = Othello_sarsa(reset=False)
+	s = Othello_sarsa(epsilon=0.9, reset=False)
 	s.load_qs('test')
 	b_prev_state = None
 	b_prev_board = None
@@ -27,9 +27,8 @@ def train():
 				if w_prev_board is not None and w_prev_state is not None:
 					s.update_q(w_prev_state, w_prev_board, reward, curr_state, curr_board)
 				w_prev_board = curr_board
-				w_prev_state = w_prev_state
+				w_prev_state = curr_state
 		stone = Board.get_other_stone(stone)
-	# print(s.qs)
 	s.save_qs('test')
 
 

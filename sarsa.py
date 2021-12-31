@@ -7,7 +7,7 @@ FOLDER_NAME = "datafile/"
 
 
 class Othello_sarsa:
-	def __init__(self, learning=0.5, discount=0.5, epsilon=1, reward=100, reset=True):
+	def __init__(self, learning=0.5, discount=0.5, epsilon=0.5, reward=1000, reset=True):
 		self.learning = learning
 		self.discount = discount
 		self.epsilon = epsilon
@@ -26,17 +26,20 @@ class Othello_sarsa:
 	def access_q(self, state, action):
 		action = repr(action)
 		if action not in self.qs[state]:
-			self.qs[state][action] = 0
 			return 0
 		return self.qs[state][action]
 
 
 	def update_q(self, state, action, reward, new_state, new_action):
 		if action not in self.qs[state]:
-			self.qs[state][action] = 0
+			curr_val = 0
+		else:
+			curr_val = self.qs[state][action]
 		if new_action not in self.qs[new_state]:
-			self.qs[new_state][new_action] = 0
-		self.qs[state][action] = (1 - self.learning) * self.qs[state][action] + self.learning * (reward + self.discount * self.qs[new_state][new_action])
+			new_val = 0
+		else:
+			new_val = self.qs[new_state][new_action]
+		self.qs[state][action] = (1 - self.learning) * curr_val + self.learning * (reward + self.discount * new_val)
 		return
 
 
